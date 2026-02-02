@@ -11,6 +11,7 @@ public class Telefono {
         this.numero = numero;
     }
 
+
     // Getters
     public int getId() { return id; }
     public String getNumero() { return numero; }
