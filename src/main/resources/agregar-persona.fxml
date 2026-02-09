@@ -14,20 +14,36 @@
 
         <Separator style="-fx-background-color: #ddd;" />
 
-        <VBox spacing="8">
+        <VBox spacing="5">
             <Label text="Datos Personales" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
+            <Label text="Nombre completo:" style="-fx-font-size: 12px; -fx-text-fill: #666;" />
+            <TextField fx:id="txtNombre" style="-fx-font-size: 13px;" promptText="Ej. Juan Pérez" />
+        </VBox>
 
-            <VBox spacing="5">
-                <Label text="Nombre completo:" style="-fx-font-size: 12px; -fx-text-fill: #666;" />
-                <TextField fx:id="txtNombre"
-                           style="-fx-font-size: 13px;" />
-            </VBox>
+        <Separator style="-fx-background-color: #ddd;" />
 
-            <VBox spacing="5">
-                <Label text="Dirección:" style="-fx-font-size: 12px; -fx-text-fill: #666;" />
-                <TextField fx:id="txtDireccion"
+        <VBox spacing="10">
+            <Label text="Direcciones" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <TextField fx:id="txtNuevaDireccion"
+                           promptText="Escribe la dirección (Calle, #, Col)"
+                           HBox.hgrow="ALWAYS"
                            style="-fx-font-size: 13px;" />
-            </VBox>
+                <Button text="Agregar"
+                        onAction="#agregarDireccionALista"
+                        style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-cursor: hand;" />
+            </HBox>
+
+            <ListView fx:id="listDirecciones"
+                      prefHeight="100.0"
+                      style="-fx-border-color: #ddd; -fx-border-radius: 5;" />
+
+            <Button fx:id="btnEliminarDireccion"
+                    text="Eliminar dirección seleccionada"
+                    onAction="#eliminarDireccionSeleccionada"
+                    style="-fx-background-color: #f44336; -fx-text-fill: white; -fx-cursor: hand;"
+                    disable="true"/>
         </VBox>
 
         <Separator style="-fx-background-color: #ddd;" />
@@ -42,23 +58,18 @@
                            style="-fx-font-size: 13px;" />
                 <Button text="Agregar"
                         onAction="#agregarTelefonoALista"
-                        style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" />
+                        style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-cursor: hand;" />
             </HBox>
 
-            <VBox spacing="5">
-                <Label text="Teléfonos agregados:" style="-fx-font-size: 12px; -fx-text-fill: #666;" />
+            <ListView fx:id="listTelefonos"
+                      prefHeight="100.0"
+                      style="-fx-border-color: #ddd; -fx-border-radius: 5;" />
 
-                <ListView fx:id="listTelefonos"
-                          prefHeight="120.0"
-                          style="-fx-border-color: #ddd; -fx-border-radius: 5;" />
-
-                <HBox spacing="10" alignment="CENTER_LEFT">
-                    <Button fx:id="btnEliminarTelefono"
-                            text="Eliminar seleccionado"
-                            onAction="#eliminarTelefonoSeleccionado"
-                            style="-fx-background-color: #f44336; -fx-text-fill: white; -fx-cursor: hand;" />
-                </HBox>
-            </VBox>
+            <Button fx:id="btnEliminarTelefono"
+                    text="Eliminar teléfono seleccionado"
+                    onAction="#eliminarTelefonoSeleccionado"
+                    style="-fx-background-color: #f44336; -fx-text-fill: white; -fx-cursor: hand;"
+                    disable="true"/>
         </VBox>
 
         <Separator style="-fx-background-color: #ddd;" />
@@ -67,14 +78,10 @@
             <padding>
                 <Insets top="10" />
             </padding>
-
-            <Button text="✖ Cancelar"
-                    onAction="#cerrarVentana"
-                    style="-fx-background-color: #9E9E9E; -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 10 20; -fx-cursor: hand;" />
-
-            <Button text="✔ Guardar Todo"
-                    onAction="#guardarPersona"
-                    style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-padding: 10 30; -fx-cursor: hand;" />
+            <Button text="Cancelar" onAction="#cerrarVentana"
+                    style="-fx-background-color: #9E9E9E; -fx-text-fill: white; -fx-padding: 10 20; -fx-cursor: hand;" />
+            <Button text="Guardar Todo" onAction="#guardarPersona"
+                    style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 30; -fx-cursor: hand;" />
         </HBox>
     </children>
 </VBox>

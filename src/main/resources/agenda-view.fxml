@@ -20,8 +20,8 @@
         <TableView fx:id="tablaPersonas" layoutX="41.0" layoutY="91.0" prefHeight="450.0" prefWidth="852.0">
             <columns>
                 <TableColumn fx:id="colID" prefWidth="50.0" text="ID" />
-                <TableColumn fx:id="colNombre" prefWidth="250.0" text="Nombre" />
-                <TableColumn fx:id="colDireccion" prefWidth="350.0" text="Dirección" />
+                <TableColumn fx:id="colNombre" prefWidth="200.0" text="Nombre" />
+                <TableColumn fx:id="colDireccion" prefWidth="350.0" text="Direcciones" />
                 <TableColumn fx:id="colTelefonos" prefWidth="200.0" text="Acciones" />
             </columns>
             <columnResizePolicy>
@@ -31,13 +31,13 @@
 
         <HBox alignment="CENTER_LEFT" layoutX="41.0" layoutY="560.0" spacing="10.0">
             <children>
-                <Label text="Editar:" />
+                <Label text="Vista Rápida:" style="-fx-font-weight: bold;" />
                 <TextField fx:id="txtEditID" disable="true" editable="false" prefWidth="50.0" promptText="ID" />
-                <TextField fx:id="txtEditNombre" prefWidth="200.0" promptText="Nombre" />
-                <TextField fx:id="txtEditDireccion" prefWidth="250.0" promptText="Dirección" />
+                <TextField fx:id="txtEditNombre" editable="false" prefWidth="200.0" promptText="Nombre" />
+                <TextField fx:id="txtEditDireccion" editable="false" prefWidth="250.0" promptText="Dirección Principal" />
 
-                <Button onAction="#handleActualizar" style="-fx-background-color: #4CAF50; -fx-text-fill: white;" text="Actualizar" />
-                <Button onAction="#handleEliminar" style="-fx-background-color: #f44336; -fx-text-fill: white;" text="Eliminar" />
+                <Button onAction="#handleActualizar" style="-fx-background-color: #FFC107; -fx-text-fill: black;" text="✏ Editar" />
+                <Button onAction="#handleEliminar" style="-fx-background-color: #f44336; -fx-text-fill: white;" text="🗑 Eliminar" />
             </children>
         </HBox>
 
