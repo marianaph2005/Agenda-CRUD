@@ -8,21 +8,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AgregarController {
-    @FXML private TextField txtNombre, txtDireccion, txtNuevoTelefono;
+    @FXML private TextField txtNombre;
+    @FXML private TextField txtNuevaDireccion;
+    @FXML private ListView<String> listDirecciones;
+    @FXML private Button btnEliminarDireccion;
+    @FXML private TextField txtNuevoTelefono;
     @FXML private ListView<String> listTelefonos;
     @FXML private Button btnEliminarTelefono;
+
     @FXML private Label lblTitulo;
 
     private PersonaDAO dao = new PersonaDAO();
-    private Persona personaEnEdicion; // null- modo crear, dif de null- modo editar
+    private Persona personaEnEdicion;// null- modo crear, dif de null- modo editar
 
     @FXML
     public void initialize() {
-        // Habilitar botón de eliminar
+        // Deshabilitar botones de eliminar si no hay nada seleccionado
         btnEliminarTelefono.setDisable(true);
-        listTelefonos.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            btnEliminarTelefono.setDisable(newVal == null);
-        });
+        btnEliminarDireccion.setDisable(true);
+
+        listTelefonos.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) ->
+                btnEliminarTelefono.setDisable(newVal == null));
+
+        listDirecciones.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) ->
+                btnEliminarDireccion.setDisable(newVal == null));
     }
 
     //Método llamado desde MainController para editar una persona
@@ -30,34 +39,38 @@ public class AgregarController {
         this.personaEnEdicion = p;
         lblTitulo.setText("Editar Persona - ID: " + p.getId());
         txtNombre.setText(p.getNombre());
-        txtDireccion.setText(p.getDireccion());
 
         // Cargar teléfonos existentes
         listTelefonos.getItems().clear();
-        for (Telefono t : p.getTelefonos()) {
-            listTelefonos.getItems().add(t.getNumero());
+        for (Telefono t : p.getTelefonos()) listTelefonos.getItems().add(t.getNumero());
+
+        listDirecciones.getItems().clear();
+        for (Direccion d : p.getDirecciones()) listDirecciones.getItems().add(d.getUbicacion());
+    }
+
+    @FXML
+    private void agregarDireccionALista() {
+        String dir = txtNuevaDireccion.getText().trim();
+        if (!dir.isEmpty() && !listDirecciones.getItems().contains(dir)) {
+            listDirecciones.getItems().add(dir);
+            txtNuevaDireccion.clear();
         }
+    }
+
+    @FXML
+    private void eliminarDireccionSeleccionada() {
+        String seleccionado = listDirecciones.getSelectionModel().getSelectedItem();
+        if (seleccionado != null) listDirecciones.getItems().remove(seleccionado);
     }
 
     //Agregar un nuevo teléfono a la lista
     @FXML
     private void agregarTelefonoALista() {
-        String numero = txtNuevoTelefono.getText().trim();
-
-        if (numero.isEmpty()) {
-            mostrarAdvertencia("Escribe un número de teléfono");
-            return;
+        String num = txtNuevoTelefono.getText().trim();
+        if (!num.isEmpty() && !listTelefonos.getItems().contains(num)) {
+            listTelefonos.getItems().add(num);
+            txtNuevoTelefono.clear();
         }
-
-        // No permitir duplicados
-        if (listTelefonos.getItems().contains(numero)) {
-            mostrarAdvertencia("Este número ya está en la lista");
-            return;
-        }
-
-        listTelefonos.getItems().add(numero);
-        txtNuevoTelefono.clear();
-        txtNuevoTelefono.requestFocus();
     }
 
     //Eliminar el teléfono seleccionado de la lista
@@ -66,7 +79,7 @@ public class AgregarController {
         String seleccionado = listTelefonos.getSelectionModel().getSelectedItem();
 
         if (seleccionado == null) {
-            mostrarAdvertencia("Selecciona un teléfono para eliminar");
+            mostrarAlerta("Selecciona un teléfono para eliminar");
             return;
         }
 
@@ -90,59 +103,40 @@ public class AgregarController {
     // Guardar datos (crear o actualizar)
     @FXML
     private void guardarPersona() {
-        // Validaciones por si deja vacío algún campo
-        String nombre = txtNombre.getText().trim();
-        String direccion = txtDireccion.getText().trim();
-
-        if (nombre.isEmpty()) {
-            mostrarAdvertencia("El nombre es obligatorio");
-            txtNombre.requestFocus();
+        if (txtNombre.getText().isEmpty()) {
+            mostrarAlerta("El nombre es obligatorio");
             return;
         }
 
-        if (direccion.isEmpty()) {
-            mostrarAdvertencia("La dirección es obligatoria");
-            txtDireccion.requestFocus();
-            return;
-        }
+        List<Telefono> listaTels = new ArrayList<>();
+        for (String s : listTelefonos.getItems()) listaTels.add(new Telefono(0, 0, s));
 
-        if (listTelefonos.getItems().isEmpty()) {
-            mostrarAdvertencia("Agrega al menos un teléfono");
-            txtNuevoTelefono.requestFocus();
-            return;
-        }
+        List<Direccion> listaDirs = new ArrayList<>();
+        for (String s : listDirecciones.getItems()) listaDirs.add(new Direccion(0, 0, s));
 
-        // Se construye la lista de los telefonos
-        List<Telefono> listaTelefonos = new ArrayList<>();
-        for (String numeroTel : listTelefonos.getItems()) {
-            // Los IDs de los teléfonos se generan automáticamente en la db
-            listaTelefonos.add(new Telefono(0, 0, numeroTel));
-        }
-
-        // Guardar en la base de datos
         try {
             if (personaEnEdicion == null) {
-                // Modo crear nuevas personas
-                Persona nueva = new Persona(nombre, direccion, listaTelefonos);
+                // CREAR
+                Persona nueva = new Persona(txtNombre.getText(), listaDirs, listaTels);
                 dao.create(nueva);
-                mostrarExito("Persona creada exitosamente con ID: " + nueva.getId());
             } else {
-                // Modo para editar las personas existentes
-                personaEnEdicion.setNombre(nombre);
-                personaEnEdicion.setDireccion(direccion);
+                // ACTUALIZAR
+                personaEnEdicion.setNombre(txtNombre.getText());
 
                 // Reemplazar lista de teléfonos completa
                 personaEnEdicion.getTelefonos().clear();
-                personaEnEdicion.getTelefonos().addAll(listaTelefonos);
+                personaEnEdicion.getTelefonos().addAll(listaTels);
+
+                personaEnEdicion.getDirecciones().clear();
+                personaEnEdicion.getDirecciones().addAll(listaDirs);
 
                 dao.update(personaEnEdicion);
-                mostrarExito("Persona actualizada exitosamente");
             }
 
             cerrarVentana();
 
         } catch (SQLException e) {
-            mostrarError("Error al guardar en la base de datos:\n" + e.getMessage());
+            mostrarAlerta("Error BD: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -153,27 +147,7 @@ public class AgregarController {
         txtNombre.getScene().getWindow().hide();
     }
 
-    private void mostrarExito(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Éxito");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-
-    private void mostrarAdvertencia(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Advertencia");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
-    }
-
-    private void mostrarError(String mensaje) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(mensaje);
-        alert.showAndWait();
+    private void mostrarAlerta(String mensaje) {
+        new Alert(Alert.AlertType.WARNING, mensaje).showAndWait();
     }
 }

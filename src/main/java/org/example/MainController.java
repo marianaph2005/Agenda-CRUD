@@ -1,5 +1,6 @@
 package org.example;
 
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -35,7 +36,16 @@ public class MainController {
     public void initialize() {
         colID.setCellValueFactory(new PropertyValueFactory<>("id"));
         colNombre.setCellValueFactory(new PropertyValueFactory<>("nombre"));
-        colDireccion.setCellValueFactory(new PropertyValueFactory<>("direccion"));
+        colDireccion.setCellValueFactory(cellData -> {
+            var lista = cellData.getValue().getDirecciones();
+            if (lista == null || lista.isEmpty()) {
+                return new SimpleStringProperty("Sin dirección");
+            } else {
+                // Muestra la primera dirección y si hay más
+                String primera = lista.get(0).getUbicacion();
+                return new SimpleStringProperty(lista.size() > 1 ? primera + "..." : primera);
+            }
+        });
 
         configurarColumnaBotones();
 
@@ -49,7 +59,13 @@ public class MainController {
             if (newSelection != null) {
                 txtEditID.setText(String.valueOf(newSelection.getId()));
                 txtEditNombre.setText(newSelection.getNombre());
-                txtEditDireccion.setText(newSelection.getDireccion());
+
+                // Si tiene direcciones se muestra la primera
+                if (!newSelection.getDirecciones().isEmpty()) {
+                    txtEditDireccion.setText(newSelection.getDirecciones().get(0).getUbicacion());
+                } else {
+                    txtEditDireccion.clear();
+                }
             }
         });
 
@@ -61,9 +77,7 @@ public class MainController {
             //Actualizamos masterData
             masterData.setAll(personaDAO.read());
         } catch (SQLException e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR,
-                    "Error de base de datos: " + e.getMessage());
-            alert.showAndWait();
+            mostrarError("Error DB: " + e.getMessage());
         }
     }
 
@@ -75,35 +89,14 @@ public class MainController {
             mostrarError("Selecciona una persona primero");
             return;
         }
-
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/agregar-persona.fxml"));
-            Scene scene = new Scene(loader.load());
-
-            AgregarController controller = loader.getController();
-            controller.editarDatos(seleccionada);
-
-            Stage stage = new Stage();
-            stage.setScene(scene);
-            stage.setTitle("Editar Persona");
-            stage.initModality(Modality.APPLICATION_MODAL);
-            stage.showAndWait();
-
-            cargarDatos();
-            limpiarCampos();
-
-        } catch (IOException e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR,
-                    "Error abriendo ventana: " + e.getMessage());
-            alert.showAndWait();
-        }
+        abrirVentanaEdicion(seleccionada);
     }
 
     @FXML
     private void handleEliminar() {
         if (txtEditID.getText().isEmpty()) return;
 
-        Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION, "¿Seguro que deseas eliminar a esta persona?");
+        Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION, "¿Eliminar?");
         confirmacion.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 try {
@@ -119,18 +112,31 @@ public class MainController {
 
     @FXML
     private void abrirVentanaAgregar() {
+        abrirVentanaEdicion(null); // null es una nueva persona
+    }
+
+    private void abrirVentanaEdicion(Persona personaAEditar) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/agregar-persona.fxml"));
+            Scene scene = new Scene(loader.load());
+
+            AgregarController controller = loader.getController();
+            // Si le pasamos a alguien se está editando, si es null es alguien nuevo
+            if (personaAEditar != null) {
+                controller.editarDatos(personaAEditar);
+            }
+
             Stage stage = new Stage();
-            stage.setScene(new Scene(loader.load()));
-            stage.setTitle("Nueva Persona");
+            stage.setScene(scene);
+            stage.setTitle(personaAEditar == null ? "Nueva Persona" : "Editar Persona");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.showAndWait();
+
             cargarDatos();
+            limpiarCampos();
         } catch (IOException e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR,
-                    "Error abriendo ventana: " + e.getMessage());
-            alert.showAndWait();
+            mostrarError("Error abriendo ventana: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -138,15 +144,20 @@ public class MainController {
         txtBuscar.textProperty().addListener((observable, oldValue, newValue) -> {
             filteredData.setPredicate(persona -> {
                 if (newValue == null || newValue.isEmpty()) return true;
+                String lower = newValue.toLowerCase();
 
-                String lowerCaseFilter = newValue.toLowerCase();
+                if (String.valueOf(persona.getId()).contains(lower)) return true;
+                if (persona.getNombre().toLowerCase().contains(lower)) return true;
 
-                if (String.valueOf(persona.getId()).contains(lowerCaseFilter)) return true;
-                if (persona.getNombre().toLowerCase().contains(lowerCaseFilter)) return true;
-                if (persona.getDireccion().toLowerCase().contains(lowerCaseFilter)) return true;
+                // Búsqueda en teléfonos
+                boolean matchTel = persona.getTelefonos().stream()
+                        .anyMatch(t -> t.getNumero().contains(lower));
 
-                return persona.getTelefonos().stream()
-                        .anyMatch(t -> t.getNumero().contains(lowerCaseFilter));
+                // Búsqueda en la lista de direcciones
+                boolean matchDir = persona.getDirecciones().stream()
+                        .anyMatch(d -> d.getUbicacion().toLowerCase().contains(lower));
+
+                return matchTel || matchDir;
             });
         });
     }
@@ -175,6 +186,19 @@ public class MainController {
                 }
             }
         });
+        colDireccion.setCellFactory(param -> new TableCell<>() {
+            private final Button btn = new Button("Ver Direcciones");
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    btn.setOnAction(event -> mostrarAlertaDirecciones(getTableView().getItems().get(getIndex())));
+                    setGraphic(btn);
+                }
+            }
+        });
     }
 
     private void mostrarAlertaTelefonos(Persona p) {
@@ -183,7 +207,20 @@ public class MainController {
                 .reduce("", (a, b) -> a + b + "\n");
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Teléfonos de " + p.getNombre());
+        alert.setHeaderText("Teléfonos registrados:");
         alert.setContentText(listaTels.isEmpty() ? "Sin números." : listaTels);
+        alert.showAndWait();
+    }
+
+    private void mostrarAlertaDirecciones(Persona p) {
+        String listaDirs = p.getDirecciones().stream()
+                .map(Direccion::getUbicacion)
+                .reduce("", (a, b) -> a + b + "\n");
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Direcciones de " + p.getNombre());
+        alert.setHeaderText("Ubicaciones registradas:");
+        alert.setContentText(listaDirs.isEmpty() ? "Sin direcciones registradas." : listaDirs);
         alert.showAndWait();
     }
 }
