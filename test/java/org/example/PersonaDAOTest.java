@@ -20,7 +20,9 @@ public class PersonaDAOTest {
         // Se preparan los datos (nueva persona)
         List<Telefono> tels = new ArrayList<>();
         tels.add(new Telefono(0, 0, "555-111-2222"));
-        Persona p = new Persona("Test JUnit", "Calle Prueba 123", tels);
+        List<Direccion> dirs = new ArrayList<>();
+        dirs.add(new Direccion(0, 0, "Calle Prueba 123"));
+        Persona p = new Persona("Test JUnit", dirs, tels);
 
         // Se inserta
         dao.create(p);
@@ -48,29 +50,44 @@ public class PersonaDAOTest {
         // Se verifica
         assertNotNull(encontrada, "Fallo Leer: No se encontró la persona insertada");
         assertEquals("Test JUnit", encontrada.getNombre(), "Fallo Leer: El nombre no coincide");
-        assertFalse(encontrada.getTelefonos().isEmpty(), "Fallo Leer: No trajo los teléfonos");
+
+        // Verificamos que tenga teléfonos y direcciones
+        assertFalse(encontrada.getTelefonos().isEmpty(), "Fallo Leer: No trajo teléfonos");
+        assertFalse(encontrada.getDirecciones().isEmpty(), "Fallo Leer: No trajo direcciones");
+
+        // Verificar que la dirección sea la correcta
+        assertEquals("Calle Prueba 123", encontrada.getDirecciones().get(0).getUbicacion());
+
         System.out.println("Persona encontrada y datos verificados.");
 
 
-        // Parte 3- modificar
+        // --- PARTE 3: MODIFICAR ---
         System.out.println("\n--- Iniciando Test de Actualización ---");
 
         // Se modifican los datos del objeto
         encontrada.setNombre("Test Modificado");
-        encontrada.setDireccion("Calle Nueva 999");
-        encontrada.getTelefonos().add(new Telefono(0, 0, "999-000-1111")); // Agregamos otro tel
+        encontrada.getDirecciones().clear();
+        encontrada.getDirecciones().add(new Direccion(0, 0, "Calle Nueva 999"));
+
+        encontrada.getTelefonos().add(new Telefono(0, 0, "999-000-1111"));
 
         // Se actualiza la db
         dao.update(encontrada);
 
         // Se vuelve a leer de la db para verificar que se guardó
         List<Persona> listaNueva = dao.read();
-        Persona modificada = listaNueva.stream().filter(x -> x.getId() == p.getId()).findFirst().orElse(null);
+        Persona modificada = listaNueva.stream()
+                .filter(x -> x.getId() == p.getId())
+                .findFirst()
+                .orElse(null);
 
         assertNotNull(modificada);
-        assertEquals("Test Modificado", modificada.getNombre(), "Fallo Update: Nombre no cambió");
-        //ahora tiene 2 telefonos el original y el nuevo
-        assertTrue(modificada.getTelefonos().size() >= 2, "Fallo Update: No se guardaron los teléfonos nuevos");
+        assertEquals("Test Modificado", modificada.getNombre());
+
+        // Verificamos cambios en listas
+        assertEquals("Calle Nueva 999", modificada.getDirecciones().get(0).getUbicacion(), "Fallo Update: Dirección no cambió");
+        assertTrue(modificada.getTelefonos().size() >= 2, "Fallo Update: No se agregaron teléfonos");
+
         System.out.println("Actualización verificada exitosamente.");
 
 
