@@ -6,6 +6,8 @@ import org.example.database.PersonaDAO;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import org.example.database.FabricaDAO;
+import org.example.database.IPersonaDAO;
 
 public class AgregarController {
     @FXML private TextField txtNombre;
@@ -18,8 +20,12 @@ public class AgregarController {
 
     @FXML private Label lblTitulo;
 
-    private PersonaDAO dao = new PersonaDAO();
-    private Persona personaEnEdicion;// null- modo crear, dif de null- modo editar
+    private IPersonaDAO dao;
+    private Persona personaEnEdicion;
+
+    public AgregarController() {
+        this.dao = FabricaDAO.getPersonaDAO();
+    }
 
     @FXML
     public void initialize() {
@@ -103,18 +109,21 @@ public class AgregarController {
     // Guardar datos (crear o actualizar)
     @FXML
     private void guardarPersona() {
-        if (txtNombre.getText().isEmpty()) {
-            mostrarAlerta("El nombre es obligatorio");
-            return;
-        }
-
-        List<Telefono> listaTels = new ArrayList<>();
-        for (String s : listTelefonos.getItems()) listaTels.add(new Telefono(0, 0, s));
-
-        List<Direccion> listaDirs = new ArrayList<>();
-        for (String s : listDirecciones.getItems()) listaDirs.add(new Direccion(0, 0, s));
-
         try {
+            // Validar
+            ValidadorPersona.validarDatos(
+                    txtNombre.getText(),
+                    listTelefonos.getItems(),
+                    listDirecciones.getItems()
+            );
+
+            // Preparar datos
+            List<Telefono> listaTels = new ArrayList<>();
+            for (String s : listTelefonos.getItems()) listaTels.add(new Telefono(0, 0, s));
+
+            List<Direccion> listaDirs = new ArrayList<>();
+            for (String s : listDirecciones.getItems()) listaDirs.add(new Direccion(0, 0, s));
+
             if (personaEnEdicion == null) {
                 // CREAR
                 Persona nueva = new Persona(txtNombre.getText(), listaDirs, listaTels);
@@ -135,9 +144,8 @@ public class AgregarController {
 
             cerrarVentana();
 
-        } catch (SQLException e) {
-            mostrarAlerta("Error BD: " + e.getMessage());
-            e.printStackTrace();
+        } catch (Exception e) {
+            mostrarAlerta(e.getMessage());
         }
     }
 

@@ -15,6 +15,8 @@ import org.example.database.PersonaDAO;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import org.example.database.FabricaDAO;
+import org.example.database.IPersonaDAO;
 
 public class MainController {
     @FXML private TableView<Persona> tablaPersonas;
@@ -28,12 +30,13 @@ public class MainController {
     @FXML private TextField txtEditNombre;
     @FXML private TextField txtEditDireccion;
 
-    private PersonaDAO personaDAO = new PersonaDAO();
+    private IPersonaDAO personaDAO;
     private ObservableList<Persona> masterData = FXCollections.observableArrayList();
     private FilteredList<Persona> filteredData;
 
     @FXML
     public void initialize() {
+        this.personaDAO = FabricaDAO.getPersonaDAO();
         colID.setCellValueFactory(new PropertyValueFactory<>("id"));
         colNombre.setCellValueFactory(new PropertyValueFactory<>("nombre"));
         colDireccion.setCellValueFactory(cellData -> {
