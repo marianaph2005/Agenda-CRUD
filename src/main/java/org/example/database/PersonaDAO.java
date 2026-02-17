@@ -7,7 +7,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PersonaDAO {
+public class PersonaDAO implements IPersonaDAO{
 
     // Metodo para dar de alta
     public void create(Persona p) throws SQLException {
